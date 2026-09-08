@@ -93,6 +93,7 @@ esp_err_t BAP_subscription_init(void) {
 
     // Stream the standard display data even when the accessory's TX path is
     // unavailable. A received SUB command can still override the interval.
+    // Wi-Fi includes credentials and must remain explicitly requested.
     const bap_parameter_t display_defaults[] = {
         BAP_PARAM_HASHRATE,
         BAP_PARAM_TEMPERATURE,
@@ -100,7 +101,6 @@ esp_err_t BAP_subscription_init(void) {
         BAP_PARAM_FAN_SPEED,
         BAP_PARAM_SHARES,
         BAP_PARAM_BEST_DIFFICULTY,
-        BAP_PARAM_WIFI,
         BAP_PARAM_BLOCK_HEIGHT,
     };
     for (size_t i = 0; i < sizeof(display_defaults) / sizeof(display_defaults[0]); i++) {
