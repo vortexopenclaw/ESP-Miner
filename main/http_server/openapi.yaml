@@ -312,6 +312,7 @@ components:
         - overclockEnabled
         - primaryPoolIndex
         - secondaryPoolIndex
+        - useFallbackStratum
         - pools
         - poolConnectionInfo
         - poolDifficulty
@@ -644,6 +645,9 @@ components:
         uptimeSeconds:
           type: number
           description: System uptime in seconds
+        useFallbackStratum:
+          type: integer
+          description: Whether fallback stratum is selected as primary preference (0=no, 1=yes)
         version:
           type: string
           description: Firmware version
