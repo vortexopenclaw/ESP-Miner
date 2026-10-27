@@ -51,9 +51,23 @@ def check_build(build_dir, idf_path):
         expected = (Path(temporary) / "x509_crt_bundle").read_bytes()
     actual = (build_dir / "esp-idf/mbedtls/x509_crt_bundle").read_bytes()
     require(actual == expected, "Generated trust store differs from the pinned CA bundle")
-    require(actual in (build_dir / "esp-miner.bin").read_bytes(),
-            "Firmware does not contain the expected trust store")
-    print(f"Firmware contains exactly the pinned trust store ({len(actual)} bytes)")
+    roots = check_real_roots()
+    binary = (build_dir / "esp-miner.bin").read_bytes()
+    require(all(der in binary for der in roots),
+            "Firmware does not contain all approved real DER trust anchors")
+    print(f"Firmware contains exactly the pinned real DER trust inputs ({len(roots)} roots)")
+
+
+def check_real_roots():
+    source = (ROOT / "components/pinned_roots/roots.inc").read_text()
+    arrays = re.findall(r"static const unsigned char root_(\d+)\[\] = \{([0-9,]+)\};", source)
+    require({int(n) for n, _ in arrays} == set(range(118)) and len(arrays) == 118,
+            "Real DER registry must contain exactly 118 indexed roots")
+    ders = {bytes(map(int, body.split(','))) for _, body in arrays}
+    pems = re.findall(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", BUNDLE.read_text(), re.S)
+    expected = {ssl.PEM_cert_to_DER_cert(pem) for pem in pems}
+    require(len(ders) == 118 and ders == expected, "Real DER roots differ from pinned PEM")
+    return ders
 
 
 def main():
@@ -68,6 +82,7 @@ def main():
             "Pinned CA bundle checksum mismatch")
     require(hashlib.sha256(CHAINS.read_bytes()).hexdigest() == CHAINS_SHA256,
             "Incident test archive checksum mismatch")
+    check_real_roots()
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.load_verify_locations(cafile=str(BUNDLE))
     require(context.cert_store_stats()["x509_ca"] == 118, "Expected 118 trusted roots")
