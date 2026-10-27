@@ -48,7 +48,7 @@ static esp_err_t send_settings(httpd_req_t *req)
                                 nvs_config_get_bool(NVS_CONFIG_WEBHOOK_BEST_DIFF));
 }
 
-static esp_err_t GET_webhook_alert_settings(httpd_req_t *req)
+esp_err_t GET_webhook_alert_settings(httpd_req_t *req)
 {
     if (is_network_allowed(req) != ESP_OK) {
         return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
@@ -129,7 +129,7 @@ static bool validate_optional_bool(const cJSON *root, const char *name)
     return item == NULL || cJSON_IsBool(item);
 }
 
-static esp_err_t PATCH_webhook_alert_settings(httpd_req_t *req)
+esp_err_t PATCH_webhook_alert_settings(httpd_req_t *req)
 {
     if (is_network_allowed(req) != ESP_OK) {
         return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
@@ -229,7 +229,7 @@ static esp_err_t parse_test_event(httpd_req_t *req, WebhookAlertTestEvent *test_
     return ESP_OK;
 }
 
-static esp_err_t POST_webhook_alert_test(httpd_req_t *req)
+esp_err_t POST_webhook_alert_test(httpd_req_t *req)
 {
     if (is_network_allowed(req) != ESP_OK) {
         return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
@@ -267,33 +267,5 @@ static esp_err_t POST_webhook_alert_test(httpd_req_t *req)
     set_cors_headers(req);
     result = HTTP_send_json(req, root, &response_prebuffer_len);
     cJSON_Delete(root);
-    return result;
-}
-
-esp_err_t register_webhook_alert_api(httpd_handle_t server)
-{
-    const httpd_uri_t get_settings = {
-        .uri = "/api/system/alerts",
-        .method = HTTP_GET,
-        .handler = GET_webhook_alert_settings,
-    };
-    const httpd_uri_t patch_settings = {
-        .uri = "/api/system/alerts",
-        .method = HTTP_PATCH,
-        .handler = PATCH_webhook_alert_settings,
-    };
-    const httpd_uri_t test_alert = {
-        .uri = "/api/system/alerts/test",
-        .method = HTTP_POST,
-        .handler = POST_webhook_alert_test,
-    };
-
-    esp_err_t result = httpd_register_uri_handler(server, &get_settings);
-    if (result == ESP_OK) {
-        result = httpd_register_uri_handler(server, &patch_settings);
-    }
-    if (result == ESP_OK) {
-        result = httpd_register_uri_handler(server, &test_alert);
-    }
     return result;
 }

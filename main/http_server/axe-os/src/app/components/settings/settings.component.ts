@@ -1,5 +1,5 @@
 import { Component, ViewChild, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { FormGroup } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { EditComponent } from '../edit/edit.component';
@@ -9,7 +9,7 @@ import { WebhookAlertsComponent } from '../webhook-alerts/webhook-alerts.compone
     selector: 'app-settings',
     templateUrl: './settings.component.html',
     standalone: true,
-    imports: [CommonModule, EditComponent, WebhookAlertsComponent]
+    imports: [AsyncPipe, EditComponent, WebhookAlertsComponent]
 })
 export class SettingsComponent implements AfterViewInit {
   form$!: Observable<FormGroup | null>;
