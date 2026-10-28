@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 SDK_SHA = '7101770dc6db2667b3c477cc31365dd1acd6db4e'
@@ -43,11 +44,30 @@ def main():
             raise RuntimeError('SDK revision differs from the reviewed release pin')
         if run(['git', '-C', path, 'status', '--porcelain', '--untracked-files=no']).strip():
             raise RuntimeError('SDK tracked sources must be clean')
+    for name in ('roots.inc', 'root-identities.json'):
+        if (ROOT / 'components/pinned_roots' / name).exists():
+            raise RuntimeError('Generate native roots in the build directory, not the source tree')
     fixtures = ROOT / 'tools/native_roots/fixtures'
+    if list(fixtures.glob('*emudhra*.pem')):
+        raise RuntimeError('Reuse the existing incident archive instead of copied chains')
     manifest = json.loads((fixtures / 'sha256.json').read_text())
     for name, digest in manifest.items():
-        if hashlib.sha256((fixtures / name).read_bytes()).hexdigest() != digest:
+        data = (fixtures / name).read_bytes()
+        if hashlib.sha256(data).hexdigest() != digest:
             raise RuntimeError(f'Fixture checksum mismatch: {name}')
+    incident_fixtures = out / 'incident-fixtures'
+    incident_fixtures.mkdir()
+    archive = ROOT / 'certificates/test/emudhra-chains-2026-10-20.zip'
+    if hashlib.sha256(archive.read_bytes()).hexdigest() != '8a2edc81b6c51e3ad27d45ca1e441ec84c961e2dee0fc547f2a02c0f74315f95':
+        raise RuntimeError('Incident archive checksum mismatch')
+    with zipfile.ZipFile(archive) as chains:
+        names = [name for name in chains.namelist() if name.endswith('.pem')]
+        assert len(names) == 12
+        for name in names:
+            target = incident_fixtures / Path(name).name
+            assert not target.exists()
+            target.write_bytes(chains.read(name))
+    run([sys.executable, ROOT / 'tools/generate_pinned_roots.py', '--output', out / 'roots.inc'])
     config = out / 'native_config.h'
     config.write_text('#undef MBEDTLS_HAVE_TIME_DATE\n#define MBEDTLS_X509_TRUSTED_CERTIFICATE_CALLBACK\n')
     compat = out / 'compat/mbedtls'
@@ -84,7 +104,8 @@ def main():
          '--input', ROOT / 'certificates/cacert-2026-10-20.pem'])
     hosts = ['discord.com', 'api.coingecko.com', 'api.coinbase.com', 'mempool.space', 'github.com', 'api.github.com']
     def fixed(name, host, expected, threaded=False):
-        stdout = run([out / 'fixed', fixtures / name, host, '0', '0', str(expected),
+        certificate = name if isinstance(name, Path) else fixtures / name
+        stdout = run([out / 'fixed', certificate, host, '0', '0', str(expected),
                       *(['threads'] if threaded else [])], 0 if threaded else expected)
         if threaded:
             assert 'failed=0' in stdout
@@ -94,7 +115,7 @@ def main():
             assert match is not None
             flags_out = int(match[1], 16)
             assert flags_out == (4 if host == 'wrong.example' else 8 if expected else 0)
-        rows.append({'name': name, 'host': host, 'threaded': threaded, 'output': stdout})
+        rows.append({'name': certificate.name, 'host': host, 'threaded': threaded, 'output': stdout})
     for host in hosts:
         expected = 2 if host in hosts[:3] else 0
         stdout = run([out / 'baseline', out / 'x509_crt_bundle', fixtures / (host + '-full.pem'), host], expected)
@@ -104,10 +125,10 @@ def main():
         if (fixtures / (host + '-short.pem')).exists():
             run([out / 'baseline', out / 'x509_crt_bundle', fixtures / (host + '-short.pem'), host])
             fixed(host + '-short.pem', host, 0)
-    incident = sorted(fixtures.glob('*emudhra*.pem'))
+    incident = sorted(incident_fixtures.glob('*.pem'))
     assert len(incident) == 12
     for f in incident:
-        fixed(f.name, f.stem, 2)
+        fixed(f, f.stem, 2)
     for name in ['self.pem', 'attacker-full.pem', 'bad-signature.pem']:
         fixed(name, 'api.coingecko.com' if name == 'self.pem' else 'discord.com', 2)
     for host in hosts[:2] + ['mempool.space']:
@@ -139,7 +160,7 @@ def main():
                                  ('mempool.space-full.pem', 'mempool.space', 0)]:
         rows.append({'fault': name, 'host': host,
                      'output': run([out / 'fault', fixtures / name, host, expected])})
-    raw = (ROOT / 'components/pinned_roots/roots.inc').read_text()
+    raw = (out / 'roots.inc').read_text()
     helper = (ROOT / 'components/pinned_roots/real_roots.c').read_text()
     variants = {
         'empty': 'static const root_entry roots[1]={{NULL,0,NULL,0}};\n#define ROOT_COUNT 118\n#define ROOT_CANDIDATE_CAP 7\n#define ROOT_DER_CAP 6969\n',

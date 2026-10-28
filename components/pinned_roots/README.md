@@ -2,10 +2,9 @@
 
 This component replaces the compact-bundle verifier only for Stratum's system-certificate mode. Explicit custom-CA and plain-TCP modes are unchanged. It requires ESP-IDF 6.0.2's native trusted-certificate callback API, not the SDK's synthetic-root cross-sign option.
 
-`roots.inc` contains exactly the full DER forms of the existing 118 approved roots in `certificates/cacert-2026-10-20.pem`. It adds no trust anchors. Regenerate it with the SDK Python:
+The build generates `roots.inc` in its component output directory from the existing 118 approved roots in `certificates/cacert-2026-10-20.pem`. There is no second checked-in trust store. It adds no trust anchors. The existing offline checks still apply:
 
 ```sh
-python tools/generate_pinned_roots.py
 python tools/test_ca_bundle.py
 ```
 
