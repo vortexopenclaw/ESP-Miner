@@ -13,7 +13,6 @@ INCLUDE_DIRS
 
 REQUIRES
     "mbedtls"
-    "pinned_roots"
     "app_update"
     "esp_timer"
     "tcp_transport"

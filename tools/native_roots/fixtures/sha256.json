@@ -1,14 +1,8 @@
 {
-  "api.coinbase.com-full.pem": "9c8b4070f9e536af517e8bcad40131b3eeabd4903d3ac8d274ebad39509e07fd",
-  "api.coinbase.com-short.pem": "6193be2516271ef975a91b2b0e72f5f475d10b31498f4eaf58e6ed427a489eae",
-  "api.coingecko.com-full.pem": "5d5b492f822bdcb9c59aae3961c0759c83b42f805743d904823e709814614382",
-  "api.coingecko.com-short.pem": "5f3d610fe11803e24f2d251d0ef521e578aa8c04c86e46a2492dae292899c6be",
-  "api.github.com-full.pem": "1e4b26a49fcc49d00a153df4b74d198ab1084ac8106bcc2ebbc396ca236e2236",
-  "attacker-full.pem": "ec782e03f3f48fda80eba69213634478cf62dde4955a96d841b627869bc1a808",
-  "bad-signature.pem": "b88d7a85d5f0166edfdc1e2b79150709ad43f148fb9b610765c07b9c4982219f",
-  "discord.com-full.pem": "0480f6fd5c13cac15315491968b96cd4bf1a6b75aa1449d26b8912fc3ac27477",
-  "discord.com-short.pem": "6f7217616944a8cf16ed576e254921113a9386a0ef02b99bdb423215106daf10",
-  "github.com-full.pem": "70afb0c092d7f0e42a580708e13f6df9d1b0354b327a423e5d942f82b9b14b65",
-  "mempool.space-full.pem": "52e1ad9e0a6807f0fe69050426c1336594bcb61e8b19c6388c4da89743cc072f",
-  "self.pem": "8c1a29e8e64f06d1a22d3e3d3cfa94ecb7e07057c4db653a4a1000d819b0c4a1"
+  "attacker-full.pem": "3f7ebfd42afb47ae5dd49d9095fac30f0117e25aace3035c3c1beb24648a5990",
+  "bad-signature.pem": "55a40657fd000a07d92e5334b5a14c490ba7a66096a7398aa65a51bec6aa9863",
+  "braiins.com-full.pem": "ee0c261a5ff5c781caf2f31e9229e4bc1304524c1ce5874a319939d0d07e3b06",
+  "braiins.com-short.pem": "bf1f135cc8846f476b2b536dec5835704b0aa56f697d89bec7c71a944253c435",
+  "public-pool.io-full.pem": "a26940576e7b6dbaab5aee40f1f594ff840405510dc94c6fc625970f92cf6eea",
+  "self.pem": "d52d4f04503942c71fa946f99627b465e8bfb32007c7c47e7b9ec4f464dec0d5"
 }
