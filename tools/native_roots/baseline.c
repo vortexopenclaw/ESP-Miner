@@ -1,4 +1,12 @@
+#ifdef CUSTOM_ROOTS
+#include <stdio.h>
+#include <stdlib.h>
+#include "mbedtls/ssl.h"
+#include "mbedtls/x509_crt.h"
+#include "real_roots.h"
+#else
 #include "sdk_bundle.c"
+#endif
 
 /* Dispatch through the configuration installed by esp_crt_bundle_attach().
  * ca_chain alone bypasses the SDK's cross-sign trusted-certificate callback. */
@@ -24,8 +32,12 @@ int main(int argc, char **argv)
     int ret = mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_CLIENT,
                                          MBEDTLS_SSL_TRANSPORT_STREAM,
                                          MBEDTLS_SSL_PRESET_DEFAULT);
+#ifdef CUSTOM_ROOTS
+    if (!ret) ret = real_roots_attach(&conf);
+#else
     if (!ret) ret = esp_crt_bundle_set(bundle, length);
     if (!ret) ret = esp_crt_bundle_attach(&conf);
+#endif
     if (!ret) ret = mbedtls_x509_crt_parse_file(&peer, argv[2]);
     uint32_t flags = 0;
     if (!ret) {
