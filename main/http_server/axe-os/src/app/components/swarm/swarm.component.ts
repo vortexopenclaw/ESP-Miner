@@ -377,6 +377,12 @@ private isIpAddress(value: string): boolean {
     return typeof data?.ASICModel === 'string' && data.ASICModel.trim().length > 0;
   }
 
+  private isMinerInfo(data: any): boolean {
+    return this.hasAsicModel(data)
+      && Number.isFinite(data.hashRate) && data.hashRate >= 0
+      && Number.isFinite(data.sharesAccepted) && data.sharesAccepted >= 0;
+  }
+
   private getAsicEnrichment(data: any): any {
     return this.hasAsicModel(data) ? data : {};
   }
@@ -384,7 +390,7 @@ private isIpAddress(value: string): boolean {
   private fetchDevice(address: string, fetchAsic: boolean = true): Observable<SwarmDevice | null> {
     return this.httpClient.get<any>(`http://${address}/api/system/info`).pipe(
       mergeMap(info => {
-        if (!this.hasAsicModel(info)) {
+        if (!this.isMinerInfo(info)) {
           return of(null);
         }
         const asic$ = fetchAsic
@@ -429,7 +435,7 @@ private isIpAddress(value: string): boolean {
         if (!info || (info as any)._corsError === 401) {
           return of(null); // Already showed warning or timed out
         }
-        if (!this.hasAsicModel(info)) {
+        if (!this.isMinerInfo(info)) {
           return of(null);
         }
         return forkJoin({
@@ -634,7 +640,7 @@ private isIpAddress(value: string): boolean {
     const deviceModel = data.deviceModel || this.deriveDeviceModel(data);
     const swarmColor = data.swarmColor || this.deriveSwarmColor(deviceModel);
     const poolDifficulty = data.poolDifficulty || data.stratumDiff;
-    const hashRate = data.hashRate || data.hashRate_10m;
+    const hashRate = data.hashRate ?? data.hashRate_10m;
     return { ...data, deviceModel, swarmColor, poolDifficulty, hashRate };
   }
 
