@@ -1,0 +1,73 @@
+name: Reviewed PR test firmware
+on:
+  push:
+    branches: [test/ipv6-reviewed-builds]
+permissions:
+  contents: read
+jobs:
+  firmware:
+    name: ${{ matrix.variant }} / ESP-IDF v6.0.3
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: ipv6
+            source: 2d7f97c16c992700c89cb92fb7c72d1bafccc758
+          - variant: preferred-fallback
+            source: 58ad729fad957940a35212011c43c91dc16930cf
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: vortexopenclaw/ESP-Miner
+          ref: ${{ matrix.source }}
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact reviewed source
+        env:
+          SOURCE_SHA: ${{ matrix.source }}
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.14.0'
+      - name: Build production web interface
+        working-directory: main/http_server/axe-os
+        run: npm ci && npm run build
+      - name: Offline IPv6 regression checks
+        if: matrix.variant == 'ipv6'
+        run: |
+          python3 tools/test_webui_ipv6.py "$RUNNER_TEMP/ipv6-access"
+          python3 tools/test_stratum_scope.py
+          node tools/test_webui_urls.cjs
+      - name: Offline preferred-fallback regression checks
+        if: matrix.variant == 'preferred-fallback'
+        run: |
+          python3 tools/test_stratum_task.py
+          python3 tools/test_stratum_sessions.py
+          python3 tools/test_stratum_integration.py
+          python3 tools/test_stratum_controls.py
+      - name: Build firmware with project-pinned SDK
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.0.3
+          target: esp32s3
+          path: .
+          command: GITHUB_ACTIONS=true idf.py build
+      - name: Package OTA application and provenance
+        env:
+          SOURCE_SHA: ${{ matrix.source }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          mkdir test-firmware
+          cp build/esp-miner.bin test-firmware/
+          printf '%s\n' "ESP-Miner experimental $VARIANT firmware" "Source: https://github.com/vortexopenclaw/ESP-Miner/commit/$SOURCE_SHA" "SDK: ESP-IDF v6.0.3; target ESP32-S3; unmodified upstream sdkconfig." "esp-miner.bin is the unified OTA application with embedded AxeOS, NOT a factory/merged image." "Only for compatible official ESP-Miner ESP32-S3 Bitaxe boards; combined-source local qualification was Gamma board 601 only." "No NerdQAxe, Hammer or display firmware compatibility is claimed. Confirm your board is supported by this exact upstream source before testing." "This standalone artifact has not been separately flashed. Earlier combined-source qualification covered LAN IPv6 WebUI and link-local SV1 mining, with original IPv4 SV2 mining restored." "Internet GUA and IPv6 TLS remain untested. IPv4-first resolution is unchanged." "Back up settings and retain a compatible recovery image/independent recovery transport before any update. Do not erase NVS." "No device settings, NVS, credentials, ELF or private logs are included." "Download this artifact from the Actions run linked in the PR (GitHub login required), extract it and run sha256sum -c SHA256SUMS." > test-firmware/README.txt
+          printf '{"source_sha":"%s","sdk":"v6.0.3","target":"esp32s3","variant":"%s","run_url":"https://github.com/%s/actions/runs/%s"}\n' "$SOURCE_SHA" "$VARIANT" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > test-firmware/source.json
+          (cd test-firmware && sha256sum esp-miner.bin README.txt source.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-firmware-${{ matrix.variant }}-${{ matrix.source }}
+          path: test-firmware/
+          if-no-files-found: error
+          retention-days: 30
