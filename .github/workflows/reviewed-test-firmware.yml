@@ -14,7 +14,7 @@ jobs:
       matrix:
         include:
           - variant: ipv6
-            source: 2d7f97c16c992700c89cb92fb7c72d1bafccc758
+            source: 7bfbe300c9e6ab7e8edd2d24f47f7b7367f4289e
           - variant: preferred-fallback
             source: 58ad729fad957940a35212011c43c91dc16930cf
     steps:
