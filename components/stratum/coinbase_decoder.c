@@ -35,7 +35,7 @@ uint64_t coinbase_decode_varint(const uint8_t *data, int *offset) {
     int len = first_byte == 0xFD ? 2 : first_byte == 0xFE ? 4 : 8;
     uint64_t value = 0;
     for (int i = 0; i < len; i++) {
-        value |= data[*offset + i] << (i * 8);
+        value |= (uint64_t)data[*offset + i] << (i * 8);
     }
     *offset += len;
     return value;

@@ -39,6 +39,15 @@ TEST_CASE("Varint decode FF format", "[coinbase_decoder]")
     TEST_ASSERT_EQUAL_INT(9, offset);
 }
 
+TEST_CASE("Varint decode FE format with high bit set", "[coinbase_decoder]")
+{
+    uint8_t data[] = {0xFE, 0x00, 0x00, 0x00, 0x80};  // 0x80000000 in little-endian
+    int offset = 0;
+    uint64_t result = coinbase_decode_varint(data, &offset);
+    TEST_ASSERT_TRUE(0x80000000ULL == result);
+    TEST_ASSERT_EQUAL_INT(5, offset);
+}
+
 TEST_CASE("Decode P2PKH address", "[coinbase_decoder]")
 {
     // P2PKH: OP_DUP OP_HASH160 <20 bytes> OP_EQUALVERIFY OP_CHECKSIG
