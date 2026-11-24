@@ -26,26 +26,19 @@ static void ensure_base58_init(void) {
 uint64_t coinbase_decode_varint(const uint8_t *data, int *offset) {
     uint8_t first_byte = data[*offset];
     (*offset)++;
-    
+
     if (first_byte < 0xFD) {
         return first_byte;
-    } else if (first_byte == 0xFD) {
-        uint64_t value = data[*offset] | (data[*offset + 1] << 8);
-        *offset += 2;
-        return value;
-    } else if (first_byte == 0xFE) {
-        uint64_t value = data[*offset] | (data[*offset + 1] << 8) | 
-                        (data[*offset + 2] << 16) | (data[*offset + 3] << 24);
-        *offset += 4;
-        return value;
-    } else { // 0xFF
-        uint64_t value = 0;
-        for (int i = 0; i < 8; i++) {
-            value |= ((uint64_t)data[*offset + i]) << (i * 8);
-        }
-        *offset += 8;
-        return value;
     }
+
+    // 0xFD, 0xFE and 0xFF prefix a 2-, 4- or 8-byte little-endian value.
+    int len = first_byte == 0xFD ? 2 : first_byte == 0xFE ? 4 : 8;
+    uint64_t value = 0;
+    for (int i = 0; i < len; i++) {
+        value |= data[*offset + i] << (i * 8);
+    }
+    *offset += len;
+    return value;
 }
 
 void coinbase_decode_address_from_scriptpubkey(const uint8_t *script, size_t script_len, 
